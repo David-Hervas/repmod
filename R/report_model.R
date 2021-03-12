@@ -698,6 +698,7 @@ rob.ci <- function(x, level=0.95, maxit=200, R=2000){
 #' @param info Footer for the table
 #' @param use.rownames Should row names be added to the output?
 #' @return Creates a word file with the table
+#' @importFrom stats median na.omit quantile sd setNames
 #' @export
 make_word_table <- function(x, file, info=NULL, use.rownames=TRUE){
   mydoc <- officer::read_docx()

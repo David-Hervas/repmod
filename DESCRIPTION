@@ -1,7 +1,7 @@
 Package: repmod
 Type: Package
 Title: Create Report Table from Different Objects
-Version: 0.1.4
+Version: 0.1.6
 Author: David Hervas Marin
 Maintainer: David Hervas Marin <ddhervas@yahoo.es>
 Imports: boot, flextable, lme4, lmerTest, methods, officer, xtable
