@@ -1,0 +1,12 @@
+Package: repmod
+Type: Package
+Title: Create Report Table from Different Objects
+Version: 0.1.2
+Author: David Hervas Marin
+Maintainer: David Hervas Marin <ddhervas@yahoo.es>
+Description: Tools for generating descriptives and report tables for different models,
+    data.frames and tables and exporting them to different formats.
+License: GPL (>=2)
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.1.1
