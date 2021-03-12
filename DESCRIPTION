@@ -1,9 +1,10 @@
 Package: repmod
 Type: Package
 Title: Create Report Table from Different Objects
-Version: 0.1.2
+Version: 0.1.3
 Author: David Hervas Marin
 Maintainer: David Hervas Marin <ddhervas@yahoo.es>
+Imports: boot, flextable, lme4, lmerTest, officer, xtable
 Description: Tools for generating descriptives and report tables for different models,
     data.frames and tables and exporting them to different formats.
 License: GPL (>=2)
