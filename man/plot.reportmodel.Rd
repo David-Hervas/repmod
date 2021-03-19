@@ -11,12 +11,17 @@
 
 \item{...}{Further arguments passed to coefplot}
 }
+\value{
+Returns a plot of each coefficient in the model with its 95% confidence interval
+}
 \description{
 Creates a coefplot from the reportmodel object.
 }
 \examples{
 lm1 <- lm(Petal.Length ~ Sepal.Width + Species, data=iris)
 a<-report(lm1)
+oldpar <- par()
 par(mar=c(4, 10, 3, 2))
 plot(a)   #Coefplot calling plot.reportmodel
+par(mar=oldpar$mar)
 }

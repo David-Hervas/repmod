@@ -11,6 +11,9 @@ matrixPaste(..., sep = rep(" ", length(list(...)) - 1))
 
 \item{sep}{Separator for the paste function}
 }
+\value{
+Returns a matrix with the different matrices used as input pasted together
+}
 \description{
 Internal function for report.table
 }

@@ -852,6 +852,7 @@ report.factor<-function(x,...){
 #' @param digitscat Number of decimal places for categorical variables (if different to digits)
 #' @param print Should the report table be printed on screen?
 #' @param ... further arguments passed to make_table()
+#' @return Returns a summary table of the data in publication-friendly format
 #' @export
 #' @examples
 #' report(iris)
@@ -944,6 +945,7 @@ report.data.frame<-function(x, by=NULL, file=NULL, type="word", digits=2, digits
 #' @description Internal function for report.table
 #' @param ... Matrices to paste
 #' @param sep Separator for the paste function
+#' @return Returns a matrix with the different matrices used as input pasted together
 matrixPaste<-function (..., sep = rep(" ", length(list(...)) - 1)){
   theDots <- list(...)
   if (any(unlist(lapply(theDots, function(x) !is.character(x)))))
@@ -981,9 +983,11 @@ matrixPaste<-function (..., sep = rep(" ", length(list(...)) - 1)){
 #' @examples
 #' lm1 <- lm(Petal.Length ~ Sepal.Width + Species, data=iris)
 #' a<-report(lm1)
+#' oldpar <- par()
 #' par(mar=c(4, 10, 3, 2))
 #' #Coefplot calling plot.reportmodel
 #' plot(a)
+#' par(mar=oldpar$mar)  #Restore old margin values
 #' #Manual coefplot
 #' coefplot(coefs=c(1, 2, 3), lwr.int=c(0, 1, 2), upper.int=c(5, 6, 7), coefnames=c("A", "B", "C"))
 coefplot <- function(coefs, lwr.int=coefs, upper.int=coefs, offset=0, coefnames=names(coefs), abline.pos=0, sorted=FALSE, reverse=FALSE, pch=16, xlim=c(min(lwr.int, na.rm=TRUE), max(upper.int, na.rm=TRUE)), ylim=c(1, length(coefs)), color="black", ...){
@@ -1008,12 +1012,15 @@ coefplot <- function(coefs, lwr.int=coefs, upper.int=coefs, offset=0, coefnames=
 #' @description Creates a coefplot from the reportmodel object.
 #' @param x A reportmodel object
 #' @param ... Further arguments passed to coefplot
+#' @return Returns a plot of each coefficient in the model with its 95% confidence interval
 #' @export
 #' @examples
 #' lm1 <- lm(Petal.Length ~ Sepal.Width + Species, data=iris)
 #' a<-report(lm1)
+#' oldpar <- par()
 #' par(mar=c(4, 10, 3, 2))
 #' plot(a)   #Coefplot calling plot.reportmodel
+#' par(mar=oldpar$mar)
 plot.reportmodel<-function(x, ...){
   coefplot(x$coefficients, x$lwr.int, x$upper.int, ...)
 }

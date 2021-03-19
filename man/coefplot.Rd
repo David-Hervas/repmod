@@ -56,9 +56,11 @@ Creates a plot of the coefficients of a model.
 \examples{
 lm1 <- lm(Petal.Length ~ Sepal.Width + Species, data=iris)
 a<-report(lm1)
+oldpar <- par()
 par(mar=c(4, 10, 3, 2))
 #Coefplot calling plot.reportmodel
 plot(a)
+par(mar=oldpar$mar)  #Restore old margin values
 #Manual coefplot
 coefplot(coefs=c(1, 2, 3), lwr.int=c(0, 1, 2), upper.int=c(5, 6, 7), coefnames=c("A", "B", "C"))
 }

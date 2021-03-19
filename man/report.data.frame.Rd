@@ -32,6 +32,9 @@
 
 \item{...}{further arguments passed to make_table()}
 }
+\value{
+Returns a summary table of the data in publication-friendly format
+}
 \description{
 Creates a report table ready for publication.
 }
