@@ -653,6 +653,41 @@ report.glmmadmb<-function(x, file=NULL, type="word", digits=3, digitspvals=3, in
   invisible(obj)
 }
 
+#' Report from generalized least squares model
+#'
+#' @description Creates a report table from a generalized least squares model.
+#' @param x A gls object
+#' @param file Name of the file to export the table
+#' @param type Format of the file
+#' @param digits Number of decimals
+#' @param digitspvals Number of decimals for p-values
+#' @param info If TRUE, include call in the exported table
+#' @param print Should the report table be printed on screen?
+#' @param ... Further arguments passed to make_table
+#' @return A data frame with the report table
+#' @importFrom stats confint getCall
+#' @export
+report.gls<-function(x, file=NULL, type="word", digits=3, digitspvals=3, info=TRUE, print=TRUE, ...){
+  sx <- summary(x)
+  ci <- confint(x)
+  obj <- list(coefficients=setNames(sx$tTable[,1], rownames(sx$tTable)), se=sx$tTable[,2], lwr.int=ci[,1],
+              upper.int=ci[,2], pvalues=sx$tTable[,4], aic=sx$AIC)
+  output<-rbind(cbind(round(obj$coefficients,digits),round(obj$se,digits),
+                      round(obj$lwr.int,digits),round(obj$upper.int, digits), round(obj$pvalues,digitspvals)),
+                c(round(obj$aic, digits),rep("", 4)))
+  colnames(output)<-c('Estimate','Std. Error','Lower 95%','Upper 95%','P-value')
+  rownames(output)[dim(sx$tTable)[1]+1]<- 'AIC'
+  output[,"P-value"][output[,"P-value"]=="0"]<-"<0.001"
+  if(!is.null(file)){
+    info <- if(info) deparse1(getCall(x)) else NULL
+    make_table(output, file, type, info=info, ...)
+  }
+  obj$output <- data.frame(output, check.names=FALSE, stringsAsFactors=FALSE)
+  if(print) print(obj$output, row.names=TRUE, right=TRUE)
+  class(obj) <- "reportmodel"
+  invisible(obj)
+}
+
 #' Function to compute p-values for robust linear regression models
 #'
 #' @description Estimates p-values for rlm models.
