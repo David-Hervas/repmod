@@ -671,12 +671,17 @@ report.gls<-function(x, file=NULL, type="word", digits=3, digitspvals=3, info=TR
   sx <- summary(x)
   ci <- confint(x)
   obj <- list(coefficients=setNames(sx$tTable[,1], rownames(sx$tTable)), se=sx$tTable[,2], lwr.int=ci[,1],
-              upper.int=ci[,2], pvalues=sx$tTable[,4], aic=sx$AIC)
+              upper.int=ci[,2], pvalues=sx$tTable[,4], corStruct=coef(sx$modelStruct$corStruct, unconstrained = FALSE),
+              varStruct=coef(sx$modelStruct$varStruct, unconstrained = FALSE) ,aic=sx$AIC)
   output<-rbind(cbind(round(obj$coefficients,digits),round(obj$se,digits),
                       round(obj$lwr.int,digits),round(obj$upper.int, digits), round(obj$pvalues,digitspvals)),
+                if(!is.null(sx$modelStruct$corStruct)) matrix(c(round(coef(sx$modelStruct$corStruct, unconstrained = FALSE), digits), rep("", 4*length(coef(sx$modelStruct$corStruct, unconstrained = FALSE)))), ncol=5),
+                if(!is.null(sx$modelStruct$varStruc)) matrix(c(round(coef(sx$modelStruct$varStruct, unconstrained = FALSE), digits), rep("", 4*length(coef(sx$modelStruct$varStruct, unconstrained = FALSE)))), ncol=5),
                 c(round(obj$aic, digits),rep("", 4)))
   colnames(output)<-c('Estimate','Std. Error','Lower 95%','Upper 95%','P-value')
-  rownames(output)[dim(sx$tTable)[1]+1]<- 'AIC'
+  rownames(output)[-(1:dim(sx$tTable)[1])] <- c(if(!is.null(sx$modelStruct$corStruct)) names(coef(sx$modelStruct$corStruct, unconstrained = FALSE)),
+                                                if(!is.null(sx$modelStruct$varStruct)) names(coef(sx$modelStruct$varStruct, unconstrained = FALSE)),
+                                                'AIC')
   output[,"P-value"][output[,"P-value"]=="0"]<-"<0.001"
   if(!is.null(file)){
     info <- if(info) deparse1(getCall(x)) else NULL
