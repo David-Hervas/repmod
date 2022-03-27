@@ -8,22 +8,25 @@
 #' @param digitspvals Number of decimals for p-values
 #' @param info If TRUE, include call in the exported table
 #' @param print Should the report table be printed on screen?
+#' @param exclude Vector with rownames to remove from output
 #' @param ... Further arguments passed to make_table
 #' @return A data frame with the report table
 #' @importFrom stats confint getCall
 #' @export
-report.lm<-function(x, file=NULL, type="word", digits=3, digitspvals=3, info=TRUE, print=TRUE, ...){
+report.lm<-function(x, file=NULL, type="word", digits=3, digitspvals=3, info=TRUE, print=TRUE, exclude=NULL, ...){
   sx <- summary(x)
   ci <- confint(x)
   obj <- list(coefficients=setNames(sx$coefficients[,1], rownames(sx$coefficients)), se=sx$coefficients[,2], lwr.int=ci[,1],
-              upper.int=ci[,2], pvalues=sx$coefficients[,4], r.squared=sx$r.squared, adj.r.squared=sx$adj.r.squared)
+              upper.int=ci[,2], pvalues=sx$coefficients[,4], r.squared=sx$r.squared, adj.r.squared=sx$adj.r.squared, sigma=sx$sigma)
   output<-rbind(cbind(round(obj$coefficients,digits),round(obj$se,digits),
                       round(obj$lwr.int,digits),round(obj$upper.int, digits), round(obj$pvalues,digitspvals)),
                 c(round(obj$r.squared,digits+1),rep("",4)),
-                c(round(obj$adj.r.squared,digits+1),rep("",4)))
+                c(round(obj$adj.r.squared,digits+1),rep("",4)),
+                c(round(obj$sigma, digits+1), rep("", 4)))
   colnames(output)<-c('Estimate','Std. Error','Lower 95%','Upper 95%','P-value')
-  rownames(output)[c(dim(sx$coefficients)[1]+1,dim(sx$coefficients)[1]+2)]<-c('R Squared','Adj.R Squared')
+  rownames(output)[dim(sx$coefficients)[1]+c(1,2,3)]<-c('R Squared','Adj.R Squared', "Sigma")
   output[,"P-value"][output[,"P-value"]=="0"]<-"<0.001"
+  output <- output[!rownames(output) %in% exclude,]
   if(!is.null(file)){
     info <- if(info) deparse1(getCall(x)) else NULL
     make_table(output, file, type, info=info, ...)
