@@ -666,26 +666,29 @@ report.glmmadmb<-function(x, file=NULL, type="word", digits=3, digitspvals=3, in
 #' @param digitspvals Number of decimals for p-values
 #' @param info If TRUE, include call in the exported table
 #' @param print Should the report table be printed on screen?
+#' @param exclude Vector with rownames to remove from output
 #' @param ... Further arguments passed to make_table
 #' @return A data frame with the report table
 #' @importFrom stats confint getCall
 #' @export
-report.gls<-function(x, file=NULL, type="word", digits=3, digitspvals=3, info=TRUE, print=TRUE, ...){
+report.gls<-function(x, file=NULL, type="word", digits=3, digitspvals=3, info=TRUE, print=TRUE, exclude=NULL, ...){
   sx <- summary(x)
   ci <- confint(x)
   obj <- list(coefficients=setNames(sx$tTable[,1], rownames(sx$tTable)), se=sx$tTable[,2], lwr.int=ci[,1],
               upper.int=ci[,2], pvalues=sx$tTable[,4], corStruct=coef(sx$modelStruct$corStruct, unconstrained = FALSE),
-              varStruct=coef(sx$modelStruct$varStruct, unconstrained = FALSE) ,aic=sx$AIC)
+              varStruct=coef(sx$modelStruct$varStruct, unconstrained = FALSE), aic=sx$AIC, sigma=sx$sigma)
   output<-rbind(cbind(round(obj$coefficients,digits),round(obj$se,digits),
                       round(obj$lwr.int,digits),round(obj$upper.int, digits), round(obj$pvalues,digitspvals)),
                 if(!is.null(sx$modelStruct$corStruct)) matrix(c(round(coef(sx$modelStruct$corStruct, unconstrained = FALSE), digits), rep("", 4*length(coef(sx$modelStruct$corStruct, unconstrained = FALSE)))), ncol=5),
                 if(!is.null(sx$modelStruct$varStruc)) matrix(c(round(coef(sx$modelStruct$varStruct, unconstrained = FALSE), digits), rep("", 4*length(coef(sx$modelStruct$varStruct, unconstrained = FALSE)))), ncol=5),
-                c(round(obj$aic, digits),rep("", 4)))
+                c(round(obj$aic, digits),rep("", 4)),
+                c(round(obj$sigma, digits), rep("", 4)))
   colnames(output)<-c('Estimate','Std. Error','Lower 95%','Upper 95%','P-value')
   rownames(output)[-(1:dim(sx$tTable)[1])] <- c(if(!is.null(sx$modelStruct$corStruct)) names(coef(sx$modelStruct$corStruct, unconstrained = FALSE)),
                                                 if(!is.null(sx$modelStruct$varStruct)) names(coef(sx$modelStruct$varStruct, unconstrained = FALSE)),
-                                                'AIC')
+                                                'AIC', "Sigma")
   output[,"P-value"][output[,"P-value"]=="0"]<-"<0.001"
+  output <- output[!rownames(output) %in% exclude,]
   if(!is.null(file)){
     info <- if(info) deparse1(getCall(x)) else NULL
     make_table(output, file, type, info=info, ...)
