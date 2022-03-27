@@ -500,7 +500,7 @@ report.brmsfit<-function(x, file=NULL, type="word", digits=3, info=TRUE, print=T
   sx<-summary(x)
   WC<-eval(parse(text="brms::WAIC(x)"))
   random<-tryCatch(do.call(rbind, sx$random), error=function(e) NA)
-  if(!any(is.na(random))) rownames(random)<-paste(rownames(random),rep(names(sx$random), sapply(sx$random, nrow)), sep=" ")
+  #if(!any(is.na(random))) rownames(random)<-paste(rownames(random),rep(names(sx$random), sapply(sx$random, nrow)), sep=" ")
   obj<-list(coefficients=setNames(sx$fixed[,1], rownames(sx$fixed)), se=sx$fixed[,2], lwr.int=sx$fixed[,3],
             upper.int=sx$fixed[,4], random=random, WAIC=setNames(c(WC$estimates[3,1], WC$estimates[3,2]), c("WAIC", "WAIC SE")), Eff.Sample_min=min(c(sx$fixed[,6], sx$fixed[,7])), Rhat_max=round(max(sx$fixed[,5]),2))
   if(compute.exp){
@@ -514,7 +514,7 @@ report.brmsfit<-function(x, file=NULL, type="word", digits=3, info=TRUE, print=T
                               round(obj$exp.upper.int, digits))
                       } else{
                         cbind(round(obj$lwr.int,digits), round(obj$upper.int, digits))
-                      }), if(!any(is.na(random))) {matrix(unname(cbind(round(random[,1:2, drop=FALSE], digits), if(compute.exp) "-", round(random[,3:4, drop=FALSE], digits))), nrow=1)},
+                      }), if(!any(is.na(random))) {as.matrix(cbind(round(random[,1:2, drop=FALSE], digits), if(compute.exp) "-", round(random[,3:4, drop=FALSE], digits)))},
                 c(round(WC$estimates[3,1], digits), round(WC$estimates[3,2], digits), rep("", ifelse(compute.exp, 3, 2))))
   rownames(output)[dim(output)[1]]<-"WAIC"
   colnames(output)<-c('Estimate','Std. Error',if(compute.exp) 'exp(Estimate)', 'Lower 95%','Upper 95%')
