@@ -1097,3 +1097,100 @@ coefplot <- function(coefs, lwr.int=coefs, upper.int=coefs, offset=0, coefnames=
 plot.reportmodel<-function(x, ...){
   coefplot(x$coefficients, x$lwr.int, x$upper.int, ...)
 }
+
+#' K-fold cross-validation for models
+#'
+#' @description Returns cross-validated absolute fit values
+#' @param formula An object of class "formula" describing the model to be validated
+#' @param data A data frame containing the variables specified in formula argument
+#' @param k Number of folds
+#' @param fit_function Name of the model fitting function
+#' @param metric Performance metric to estimate: RMSE, MSE, MAE  or AUC
+#' @param predict.control Named list of arguments to pass to the predict function of the model
+#' @param ... Further arguments passed to the model fitting function
+#' @return Cross-validated values for the selected performance metric
+#' @export
+#' @examples
+#' cv_model(Petal.Length ~ Sepal.Width + Species, data=iris)
+cv_model <- function(formula, data, k, fit_function="lm", metric=if(length(unique(data[,as.character(formula)[2]])) == 2) "AUC" else "RMSE", predict.control=list(NULL), ...){
+  n <- nrow(data)
+  fragmentos <- sample(1:k, n, replace=TRUE)
+  sapply(1:k, function(x){
+    mod_k <- get(fit_function)(formula, data=data[fragmentos != x,], ...)
+    args <- append(list(object=mod_k, newdata = data[fragmentos == x,]), predict.control)
+    if(fit_function == "brm"){
+      prediccion_k <- do.call(fitted, args[!sapply(args, is.null)])
+      get(metric)(prediccion_k[,1], data[,as.character(formula)[2]][fragmentos == x])
+    } else{
+      prediccion_k <- do.call(predict, args[!sapply(args, is.null)])
+      get(metric)(prediccion_k, data[,as.character(formula)[2]][fragmentos == x])
+    }
+  })
+}
+
+
+#' Mean squared error
+#'
+#' @description Estimates mean squared error from predicted and observed values
+#' @param pred Numeric vector of predicted values
+#' @param obs Numeric vector of observed values
+#' @return Returns the MSE
+#' @export
+#' @examples
+#' lm1 <- lm(Petal.Length ~ Sepal.Width + Species, data=iris)
+#' pred1 <- fitted(lm1)
+#' MSE(pred1, iris$Petal.Length)
+MSE <- function(pred, obs){
+  mean((pred-obs)^2)
+}
+
+#' Root mean squared error
+#'
+#' @description Estimates root mean squared error from predicted and observed values
+#' @param pred Numeric vector of predicted values
+#' @param obs Numeric vector of observed values
+#' @return Returns the RMSE
+#' @export
+#' @examples
+#' lm1 <- lm(Petal.Length ~ Sepal.Width + Species, data=iris)
+#' pred1 <- fitted(lm1)
+#' RMSE(pred1, iris$Petal.Length)
+RMSE <- function(pred, obs){
+  sqrt(MSE(pred, obs))
+}
+
+#' Mean absolute error
+#'
+#' @description Estimates mean absolute error from predicted and observed values
+#' @param pred Numeric vector of predicted values
+#' @param obs Numeric vector of observed values
+#' @return Returns the MAE
+#' @export
+#' @examples
+#' lm1 <- lm(Petal.Length ~ Sepal.Width + Species, data=iris)
+#' pred1 <- fitted(lm1)
+#' MAE(pred1, iris$Petal.Length)
+MAE <- function(pred, obs){
+  mean(abs(pred-obs))
+}
+
+#' ROC area under curve
+#'
+#' @description Estimates AUC from predicted and observed values
+#' @param pred Numeric vector of predicted values
+#' @param obs Numeric vector of observed values or factor with two levels
+#' @return Returns the AUC
+#' @export
+#' @examples
+#' glm1 <- glm(case ~ spontaneous + age, data=infert, family="binomial")
+#' pred1 <- fitted(glm1)
+#' AUC(pred1, infert$case)
+AUC <- function(pred, obs){
+  #Observed values
+  ns <- table(obs)
+  #Ranks in pred
+  rank_pred <- rank(pred)
+  #AUC
+  max((sum(rank_pred[obs == names(ns)[2]]) - ns[2]*(ns[2]+1)/2)/(prod(ns)),
+  (sum(rank_pred[obs == names(ns)[1]]) - ns[1]*(ns[1]+1)/2)/(prod(ns)))
+}
