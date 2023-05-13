@@ -1109,10 +1109,11 @@ plot.reportmodel<-function(x, ...){
 #' @param predict.control Named list of arguments to pass to the predict function of the model
 #' @param ... Further arguments passed to the model fitting function
 #' @return Cross-validated values for the selected performance metric
+#' @importFrom stats fitted predict
 #' @export
 #' @examples
 #' cv_model(Petal.Length ~ Sepal.Width + Species, data=iris)
-cv_model <- function(formula, data, k, fit_function="lm", metric=if(length(unique(data[,as.character(formula)[2]])) == 2) "AUC" else "RMSE", predict.control=list(NULL), ...){
+cv_model <- function(formula, data, k=5, fit_function="lm", metric=if(length(unique(data[,as.character(formula)[2]])) == 2) "AUC" else "RMSE", predict.control=list(NULL), ...){
   n <- nrow(data)
   fragmentos <- sample(1:k, n, replace=TRUE)
   sapply(1:k, function(x){

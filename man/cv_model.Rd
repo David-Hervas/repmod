@@ -7,7 +7,7 @@
 cv_model(
   formula,
   data,
-  k,
+  k = 5,
   fit_function = "lm",
   metric = if (length(unique(data[, as.character(formula)[2]])) == 2) "AUC" else "RMSE",
   predict.control = list(NULL),
