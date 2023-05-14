@@ -1150,7 +1150,7 @@ boot_model <- function(formula, data, B=200, fit_function="lm", metric=if(length
   prediction_app <- do.call(fitted, args_app[!sapply(args_app, is.null)])
   apparent_metric <- get(metric)(prediction_app, data[,as.character(formula)[2]])
   boot_samples <- replicate(B, data[sample(1:nrow(data), replace=TRUE), ], simplify = FALSE)
-  boot_results <- do.call(rbind, pblapply(boot_samples, function(x){
+  boot_results <- do.call(rbind, lapply(boot_samples, function(x){
     mod_k <- get(fit_function)(formula, data=x, ...)
     args_boot <- append(list(object=mod_k, newdata = x), predict.control)
     args_orig <- append(list(object=mod_k, newdata = data), predict.control)
