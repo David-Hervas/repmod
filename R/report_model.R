@@ -1129,6 +1129,47 @@ cv_model <- function(formula, data, k=5, fit_function="lm", metric=if(length(uni
   })
 }
 
+#' Bootstrap optimism correction for models
+#'
+#' @description Returns optimism correction for absolute fit values
+#' @param formula An object of class "formula" describing the model to be validated
+#' @param data A data frame containing the variables specified in formula argument
+#' @param B Number of bootstrap samples
+#' @param fit_function Name of the model fitting function
+#' @param metric Performance metric to estimate: RMSE, MSE, MAE  or AUC
+#' @param predict.control Named list of arguments to pass to the predict function of the model
+#' @param ... Further arguments passed to the model fitting function
+#' @return Optimism correction values for the selected performance metric
+#' @importFrom stats fitted predict
+#' @export
+#' @examples
+#' boot_model(Petal.Length ~ Sepal.Width + Species, data=iris)
+boot_model <- function(formula, data, B=200, fit_function="lm", metric=if(length(unique(data[,as.character(formula)[2]])) == 2) "AUC" else "RMSE", predict.control=list(NULL), ...){
+  apparent_fit <- get(fit_function)(formula, data=data, ...)
+  args_app <- append(list(object=apparent_fit, newdata = data), predict.control)
+  prediction_app <- do.call(fitted, args_app[!sapply(args_app, is.null)])
+  apparent_metric <- get(metric)(prediction_app, data[,as.character(formula)[2]])
+  boot_samples <- replicate(B, data[sample(1:nrow(data), replace=TRUE), ], simplify = FALSE)
+  boot_results <- do.call(rbind, pblapply(boot_samples, function(x){
+    mod_k <- get(fit_function)(formula, data=x, ...)
+    args_boot <- append(list(object=mod_k, newdata = x), predict.control)
+    args_orig <- append(list(object=mod_k, newdata = data), predict.control)
+    if(fit_function == "brm"){
+      prediccion_k_boot <- do.call(fitted, args_boot[!sapply(args_boot, is.null)])
+      metric_boot <- get(metric)(prediccion_k_boot[,1], x[,as.character(formula)[2]])
+      prediccion_k_orig <- do.call(fitted, args_orig[!sapply(args_orig, is.null)])
+      metric_orig <- get(metric)(prediccion_k_orig[,1], data[,as.character(formula)[2]])
+    } else{
+      prediccion_k_boot <- do.call(predict, args_boot[!sapply(args_boot, is.null)])
+      metric_boot <- get(metric)(prediccion_k_boot, x[,as.character(formula)[2]])
+      prediccion_k_orig <- do.call(predict, args_orig[!sapply(args_orig, is.null)])
+      metric_orig <- get(metric)(prediccion_k_orig, data[,as.character(formula)[2]])
+    }
+    data.frame(metric_boot=metric_boot, metric_orig=metric_orig)
+  }))
+  list(apparent_fit = apparent_metric, optimism=mean(boot_results$metric_boot - boot_results$metric_orig))
+}
+
 
 #' Mean squared error
 #'
