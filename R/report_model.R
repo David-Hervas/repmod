@@ -919,6 +919,7 @@ report.factor<-function(x,...){
 #' @description Creates a report table ready for publication.
 #' @param x A data.frame object
 #' @param by Grouping variable for the report
+#' @param remove.by Remove grouping variable from the report table?
 #' @param file Name of the file to export the table
 #' @param type Format of the file
 #' @param digits Number of decimal places
@@ -931,22 +932,24 @@ report.factor<-function(x,...){
 #' report(iris)
 #' (reporTable<-report(iris, by="Species"))
 #' class(reporTable)
-report.data.frame<-function(x, by=NULL, file=NULL, type="word", digits=2, digitscat=digits, print=TRUE, ...){
-  if(is.data.frame(x)==F){
+report.data.frame<-function(x, by=NULL, remove.by=TRUE, file=NULL, type="word", digits=2, digitscat=digits, print=TRUE, ...){
+  if(!is.data.frame(x)){
     x<-data.frame(x)}
   x<-x[,!sapply(x, function(x) sum(is.na(x))/length(x))==1 & sapply(x, function(x) is.numeric(x) | is.factor(x)), drop=FALSE]
   if(ncol(x) == 0) stop("Data frame has no numeric or factor variables to describe")
   x[sapply(x, is.factor) & sapply(x, function(x) !all(levels(x) %in% unique(na.omit(x))))]<-lapply(x[sapply(x, is.factor) & sapply(x, function(x) !all(levels(x) %in% unique(na.omit(x))))], factor)
   if(length(by)>1){
     x.int <- data.frame(x, by=interaction(x[, match(unlist(by), names(x))]))
-    report(x.int[,-match(unlist(by), names(x.int))], by="by", file=file, type=type, digits=digits, digitscat=digitscat, ...)
+    report(x.int[,-match(unlist(by), names(x.int))], by="by", include.total=TRUE, file=file, type=type, digits=digits, digitscat=digitscat, ...)
   }
   else{
     by_v <- factor(rep("", nrow(x)))
     if(!is.null(by)){
       pos_by<-match(by, names(x))
       by_v<-factor(eval(parse(text=paste("x$", by, sep=""))))
-      x<-x[,-pos_by, drop=FALSE]
+      if(remove.by){
+        x<-x[,-pos_by, drop=FALSE]
+      }
     }
 
     #Numeric part
