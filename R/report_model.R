@@ -932,89 +932,68 @@ report.factor<-function(x,...){
 #' report(iris)
 #' (reporTable<-report(iris, by="Species"))
 #' class(reporTable)
-report.data.frame<-function(x, by=NULL, remove.by=TRUE, file=NULL, type="word", digits=2, digitscat=digits, print=TRUE, ...){
+report.data.frame <- function(x, by=NULL, remove.by=FALSE, file=NULL, type="word", digits=2, digitscat=digits, print=TRUE, ...){
+  mtapply <- function(x, group, fun, simplify=TRUE){
+    if(is.null(dim(x))) tapply(x, group, fun)
+    else sapply(split(x, group, drop=TRUE), function(x) sapply(x, function(x) fun(x)), simplify = simplify)
+  }
   if(!is.data.frame(x)){
-    x<-data.frame(x)}
-  x<-x[,!sapply(x, function(x) sum(is.na(x))/length(x))==1 & sapply(x, function(x) is.numeric(x) | is.factor(x)), drop=FALSE]
-  if(ncol(x) == 0) stop("Data frame has no numeric or factor variables to describe")
-  x[sapply(x, is.factor) & sapply(x, function(x) !all(levels(x) %in% unique(na.omit(x))))]<-lapply(x[sapply(x, is.factor) & sapply(x, function(x) !all(levels(x) %in% unique(na.omit(x))))], factor)
-  if(length(by)>1){
-    x.int <- data.frame(x, by=interaction(x[, match(unlist(by), names(x))]))
-    report(x.int[,-match(unlist(by), names(x.int))], by="by", include.total=TRUE, file=file, type=type, digits=digits, digitscat=digitscat, ...)
+    x <- data.frame(x)
   }
-  else{
-    by_v <- factor(rep("", nrow(x)))
-    if(!is.null(by)){
-      pos_by<-match(by, names(x))
-      by_v<-factor(eval(parse(text=paste("x$", by, sep=""))))
-      if(remove.by){
-        x<-x[,-pos_by, drop=FALSE]
-      }
-    }
-
-    #Numeric part
-    nums <- sapply(x, is.numeric)
-    if(any(nums==TRUE)){
-      estruct<-matrix(nrow=2, ncol=length(unique(na.omit(by_v)))+1)
-      estruct[1:2,1]<-c("", "")
-      estruct[1, -1]<-paste("Mean (SD)", ifelse(any(nums==FALSE), " / n(%)", ""), sep="")
-      estruct[2,-1]<-"Median (1st, 3rd Q.)"
-      cont<-character(2*length(x[nums==T]))
-      cont[seq(1,length(cont), 2)]<-colnames(x[,nums==T, drop=FALSE])
-      if(ncol(x[,nums==T, drop=FALSE])>1){
-        A<-matrixPaste(sapply(by(x, by_v, function(x) sapply(x[nums==T],function(x) as.character(round(mean(x, na.rm=TRUE),digits)))), function(x) t(x)), " (",
-                       sapply(by(x, by_v, function(x) sapply(x[nums==T],function(x) as.character(round(sd(x, na.rm=TRUE),digits)))), function(x) t(x)),")", sep=rep("", 3))
-
-        B<-matrixPaste(sapply(by(x, by_v, function(x) sapply(x[nums==T],function(x) as.character(round(median(x, na.rm=TRUE),digits)))), function(x) t(x)),
-                       " (",
-                       sapply(by(x, by_v, function(x) sapply(x[nums==T],function(x) as.character(round(quantile(x, 0.25, na.rm=TRUE),digits)))), function(x) t(x)),
-                       ", ",
-                       sapply(by(x, by_v, function(x) sapply(x[nums==T],function(x) as.character(round(quantile(x, 0.75, na.rm=TRUE),digits)))), function(x) t(x)),
-                       ")", sep=rep("", 5))
-      }
-      else {
-        A<-paste(sapply(by(x, by_v, function(x) sapply(x[nums==T],function(x) as.character(round(mean(x, na.rm=TRUE),digits)))), function(x) t(x)), " (",
-                 sapply(by(x, by_v, function(x) sapply(x[nums==T],function(x) as.character(round(sd(x, na.rm=TRUE),digits)))), function(x) t(x)),")", sep=rep(""))
-        B<-paste(sapply(by(x, by_v, function(x) sapply(x[nums==T],function(x) as.character(round(median(x, na.rm=TRUE),digits)))), function(x) t(x)),
-                 " (",
-                 sapply(by(x, by_v, function(x) sapply(x[nums==T],function(x) as.character(round(quantile(x, 0.25, na.rm=TRUE),digits)))), function(x) t(x)),
-                 ", ",
-                 sapply(by(x, by_v, function(x) sapply(x[nums==T],function(x) as.character(round(quantile(x, 0.75, na.rm=TRUE),digits)))), function(x) t(x)),
-                 ")", sep=rep(""))
-      }
-
-      AB<-matrix(nrow=nrow(rbind(A, B)), ncol=ncol(rbind(A,B))+1)
-      AB[seq(1, dim(rbind(A, B))[1], 2),-1]<-A
-      AB[-c(seq(1, dim(rbind(A, B))[1], 2)),-1]<-B
-      AB[,1]<-cont
-    }
-    else{
-      AB<-NULL
-      estruct<-matrix(nrow=1, ncol=length(unique(na.omit(by_v)))+1)
-      estruct[1,1]<-""
-      estruct[1, -1]<-"n (%)"
-    }
-
+  if(is.null(by)) group <- factor(rep(1, nrow(x))) else group <- x[,by]
+  if(remove.by) x <- x[,!names(x) %in% by, drop=FALSE]
+  numeric_part <- x[, sapply(x, is.numeric), drop=FALSE]
+  cat_part <- x[, sapply(x, is.factor), drop=FALSE]
+  if(ncol(numeric_part)+ncol(cat_part) == 0) stop("No numeric or factor variables to describe. Please check that 'character' variables have been defined as 'factor'.")
+  if(ncol(numeric_part)>0){
+    #Numerical part
+    num_res <- mtapply(numeric_part, group=droplevels(group), function(x) numeric_summary(x, digits=digits))
+    format_num <- data.frame(Variable="", num_res)
+    format_num[ ,1] <- unlist(lapply(names(numeric_part), function(x) c(paste(x, " (n)", sep=""), "  mean (sd)", "  median (q1, q3)")))
+  } else format_num <- NULL
+  if(ncol(cat_part)>0){
     #Categorical part
-    cats<-matrix(data="", ncol=length(levels(by_v))+1, nrow=suppressWarnings(length(na.omit(unlist(sapply(x[nums==F], function(x) na.omit(unique(x)))))))+length(x[nums==F]))
-    pos<-sapply(sapply(x[nums==F], function(x) na.omit(unique(x)), simplify=FALSE), function(x) length(x))
-    cats[rev(rev(cumsum(c(1,pos)))[-1])+rev(rev((0:(dim(x[nums==F])[2])))[-1]),1]<-colnames(x[nums==F])
-    cats[-(rev(rev(cumsum(c(1,pos)))[-1])+rev(rev((0:(dim(x[nums==F])[2])))[-1])),1]<-paste("  ", suppressWarnings(na.omit(unlist(sapply(x[nums==F], function(x) levels(as.factor(x)))))), sep="")
-    if(any(nums==FALSE)){
-      x[nums==F] <- lapply(x[nums==F],as.factor)
-      C<-matrixPaste(sapply(by(x[nums==F], by_v, function(x) sapply(x, function(x) as.character(table(x)))), function(x) unlist(x)), " (",
-                     sapply(by(x[nums==F], by_v, function(x) sapply(x, function(x) as.character(round(100*(table(x)/sum(table(x))),digitscat)))), function(x) unlist(x)),"%)", sep=rep("", 3))
-      cats[-(rev(rev(cumsum(c(1,pos)))[-1])+rev(rev((0:(dim(x[nums==F])[2])))[-1])),-1]<-C
-    }
-
-    #Matrix binding
-    output<-rbind(estruct, AB, cats)
-    colnames(output)<-c("Variable", paste(by, levels(by_v), sep=" ", "n =", as.vector(table(by_v))))
-    if(!is.null(file)) make_table(output, file, type, use.rownames=FALSE)
-    output <- data.frame(output, check.names=FALSE, stringsAsFactors=FALSE)
-    if(print) print(output, row.names=FALSE, right=FALSE)
-    invisible(output)
+    cat_res <- matrix(unlist(mtapply(cat_part, group=droplevels(group), function(x) cat_summary(x, digits=digits), simplify=FALSE)), ncol=length(levels(interaction(group, drop=TRUE))))
+    format_cat <- data.frame(Variable="", cat_res)
+    format_cat[,1] <- unlist(lapply(names(cat_part), function(y) c(paste(y, " (n)", sep=""), paste("  ", levels(x[,y]), sep=""))))
+    names(format_cat) <- make.names(c("Variable", levels(interaction(group, drop=TRUE))))
+  } else format_cat <- NULL
+  #Merge parts
+  result <- rbind(format_num, format_cat)
+  names(result) <- c(names(result)[1], paste(names(result)[-1], " (n = ", table(interaction(group, drop=TRUE)), ")", sep=""))
+  if(!is.null(file)) make_table(result, file, type, use.rownames=FALSE)
+  if(print){
+    print(format(result, justify="left"), row.names=FALSE)
+  } else{
+    invisible(format(result, justify="left"))
   }
+}
+
+#' Auxiliary functions for report.data.frame
+#' @description Internal function for numerical summary
+#' @param x A vector of class numeric
+#' @param digits Number of digits for rounding
+#' @return Returns a summary of a numerical variable
+numeric_summary <- function(x, digits){
+  mean_sd <- function(x, digits){
+    paste(round(mean(x, na.rm=TRUE), digits = digits), " (", round(sd(x, na.rm=TRUE), digits=digits), ")", sep="")
+  }
+  median_qq <- function(x, digits){
+    paste(round(median(x, na.rm=TRUE), digits = digits), " (", paste(round(quantile(x, probs=c(0.25, 0.75), na.rm=TRUE), digits), collapse=", "), ")", sep="")
+  }
+  nsize <- function(x){
+    sum(!is.na(x))
+  }
+  rbind(nsize(x), mean_sd(x, digits), median_qq(x, digits))
+}
+
+#' Auxiliary functions for report.data.frame
+#' @description Internal function for categorical summary
+#' @param x A vector of class character
+#' @param digits Number of digits for rounding
+#' @return Returns a summary of a categorical variable
+cat_summary <- function(x, digits){
+  c(sum(!is.na(x)), paste(table(x), " (", round(table(x)/sum(table(x)), digits), " %)", sep=""))
 }
 
 #' Auxiliary matrix paste function
