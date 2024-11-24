@@ -1000,7 +1000,7 @@ numeric_summary <- function(x, digits){
 #' @param digits Number of digits for rounding
 #' @return Returns a summary of a categorical variable
 cat_summary <- function(x, digits){
-  c(sum(!is.na(x)), paste(table(x), " (", round(table(x)/sum(table(x)), digits), " %)", sep=""))
+  c(sum(!is.na(x)), paste(table(x), " (", round(100*table(x)/sum(table(x)), digits), " %)", sep=""))
 }
 
 #' Auxiliary matrix paste function
