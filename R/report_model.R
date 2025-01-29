@@ -495,9 +495,9 @@ report.betareg<-function(x, file=NULL, type="word", digits=3, digitspvals=3, inf
 #' @return A data frame with the report table
 #' @importFrom stats getCall
 #' @export
-report.brmsfit <- function(x, file=NULL, type="word", digits=3, info=TRUE, print=TRUE, exclude=NULL, ...){
+report.brmsfit <- function(x, file=NULL, type="word", digits=3, info=TRUE, print=TRUE, exclude=NULL, prob=0.95, ...){
   compute.exp<-x$family$link %in% c("logit", "log")
-  sx<-summary(x)
+  sx<-summary(x, prob=prob)
   WC<-eval(parse(text="brms::WAIC(x)"))
   random<-tryCatch(do.call(rbind, sx$random), error=function(e) NA)
   pd <- bayestestR::pd(x)
@@ -524,7 +524,7 @@ report.brmsfit <- function(x, file=NULL, type="word", digits=3, info=TRUE, print
                       },
                 c(round(WC$estimates[3,1], digits), round(WC$estimates[3,2], digits), rep("", ifelse(compute.exp, 3, 2)), ""))
   rownames(output)[dim(output)[1]]<-"WAIC"
-  colnames(output)<-c('Estimate','Std. Error',if(compute.exp) 'exp(Estimate)', 'Lower 95%','Upper 95%', "pd")
+  colnames(output)<-c('Estimate','Std. Error',if(compute.exp) 'exp(Estimate)', paste('Lower ', round(prob*100), '%', sep=""),paste('Upper ', round(prob*100), '%', sep=""), "pd")
   output <- output[!rownames(output) %in% exclude,]
   if(!is.null(file)){
     info <- if(info) deparse1(getCall(x)) else NULL
